@@ -20,5 +20,5 @@ USER pptruser
 # Railway sets PORT dynamically
 EXPOSE ${PORT:-3000}
 
-# Start the service
-CMD ["node", "server.js"]
+# Start the service (using temp server without Puppeteer)
+CMD ["node", "server-temp.js"]

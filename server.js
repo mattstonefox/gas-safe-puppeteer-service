@@ -37,12 +37,43 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'gas-safe-puppeteer' });
 });
 
+// Test endpoint to verify Chrome works
+app.get('/test-chrome', async (req, res) => {
+  try {
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process'],
+      timeout: 30000
+    });
+    
+    const page = await browser.newPage();
+    await page.goto('https://example.com');
+    const title = await page.title();
+    await browser.close();
+    
+    res.json({ 
+      success: true, 
+      message: 'Chrome is working!',
+      pageTitle: title,
+      chromePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      chromePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+    });
+  }
+});
+
 async function scrapeGasSafe(searchQuery) {
   console.log(`🔍 Scraping Gas Safe Register for: ${searchQuery}`);
+  console.log(`🔧 Chrome path: ${process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'}`);
   
   const browser = await puppeteer.launch({
     headless: 'new',
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -51,8 +82,21 @@ async function scrapeGasSafe(searchQuery) {
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
-    ]
+      '--disable-gpu',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins',
+      '--disable-site-isolation-trials',
+      '--disable-extensions',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      '--disable-background-timer-throttling',
+      '--disable-domain-reliability'
+    ],
+    ignoreHTTPSErrors: true,
+    dumpio: false,
+    timeout: 60000
   });
   
   try {
